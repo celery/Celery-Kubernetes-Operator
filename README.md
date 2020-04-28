@@ -1,5 +1,5 @@
 # Celery-Kubernetes-Operator
-A basic Celery operator to be written with native python kubernetes client(WIP). To be used to manage Celery applications on a Kubernetes cluster.
+A basic Celery operator to be written in Python. To be used to manage simple Celery applications on a Kubernetes cluster. To be built as a demo project to proposed EuroPython 2020 proposal. We'll be using open source [Metacontroller](https://metacontroller.app/) add-on for Kubernetes to simplify the operator code.
 
 # Project Scope
 This project aims to have following things in place-
