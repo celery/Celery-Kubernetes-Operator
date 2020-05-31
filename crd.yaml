@@ -1,0 +1,85 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: celeryapplications.grofers.com
+spec:
+  scope: Namespaced
+  group: grofers.com
+  names:
+    kind: CeleryApplication
+    plural: celeryapplications
+    singular: celeryapplication
+    shortNames:
+      - celery
+      - capps
+      - capp
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                celery_config:
+                  type: object
+                  properties:
+                    image:
+                      type: string
+                    replicas:
+                      type: integer
+                    app_name:
+                      type: string
+                    worker_class:
+                      type: string
+                    queue_name:
+                      type: string
+                    log_level:
+                      type: string
+                    concurrency:
+                      type: integer
+                    max_tasks_per_child:
+                      type: integer
+                    resources:
+                      type: object
+                      properties:
+                        limits:
+                          type: object
+                          properties:
+                            cpu:
+                              type: string
+                            memory:
+                              type: string
+                        requests:
+                          type: object
+                          properties:
+                            cpu:
+                              type: string
+                            memory:
+                              type: string
+                  x-kubernetes-preserve-unknown-fields: true
+                flower_config:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: Duration
+          type: string
+          priority: 0
+          jsonPath: .spec.duration
+          description: For how long the pod should sleep.
+        - name: Children
+          type: string
+          priority: 0
+          jsonPath: .status.create_fn.children
+          description: The children pods created.
+        - name: Message
+          type: string
+          priority: 0
+          jsonPath: .status.create_fn.message
+          description: As returned from the handler (sometimes).
