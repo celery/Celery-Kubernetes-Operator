@@ -1,9 +1,9 @@
 # Celery-Kubernetes-Operator
-A basic Celery operator to be written in Python. To be used to manage simple Celery applications on a Kubernetes cluster. To be built as a demo project to proposed EuroPython 2020 proposal. We'll be using open source [Metacontroller](https://metacontroller.app/) add-on for Kubernetes to simplify the operator code.
+A basic Celery operator to be written in Python. To be used to manage simple Celery applications on a Kubernetes cluster. To be built as a demo project to proposed EuroPython 2020 proposal. We'll be using open source [KOPF](https://github.com/zalando-incubator/kopf) framework to write this operator in Python.
 
 # Project Scope
 This project aims to have following things in place-
-1. A Custom Resource Definition(CRD) to spec out a Celery deployment having(not limited to) these attributes -
+1. A Custom Resource Definition(CRD) to spec out a Celery deployment having these attributes -
     - Celery app module name
     - Broker URL
     - Worker Class(sync, gevent etc)
