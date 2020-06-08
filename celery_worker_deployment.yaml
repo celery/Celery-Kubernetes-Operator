@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: "{app_name}"
+    celery: "true"
+  name: "{worker_name}"
+  namespace: "{namespace}"
+spec:
+  minReadySeconds: 10
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{app_name}"
+  strategy:
+    rollingUpdate:
+      maxSurge: 20%
+      maxUnavailable: 0%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: "{app_name}"
+    spec:
+      containers:
+      - name: cart
+        image: docker-hub.grofer.io/test/cart:master-ed64b76
+        args:
+        - run-program
+        - celery
+        - --app=celery_app:celery_app
+        - worker
+        - -Q
+        - high_priority
+        - -l
+        - info
+        - -c 2
+        - -n
+        - cart_high_priority_celery@%%h
+        - --maxtasksperchild=10000
+        command:
+        - newrelic-admin
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 600m
+            memory: 1395864371200m
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

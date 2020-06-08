@@ -20,21 +20,19 @@ def create_fn(spec, name, namespace, logger, **kwargs):
     if err_msg:
         raise kopf.PermanentError(f"{err_msg}. Got {val}")
 
-    # 2. configmap creation
+    # 2. Configmap creation if we want to add one
+    # 3. Deployment for celery workers
     path = os.path.join(os.path.dirname(__file__), 'celery_deployment.yaml')
     tmpl = open(path, 'rt').read()
     text = tmpl.format(name=name, size=size)
     data = yaml.safe_load(text)
 
     api = kubernetes.client.CoreV1Api()
-    # obj = api.create_namespaced_persistent_volume_claim(
-    #     namespace=namespace,
-    #     body=data,
-    # )
-
+    obj = api.create_namespaced_persistent_volume_claim(
+        namespace=namespace,
+        body=data,
+    )
     logger.info(f"PVC child is created: %s", obj)
-
-    # 3. Deployment for celery application
 
 
 def validate_spec(spec):
