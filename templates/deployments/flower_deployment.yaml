@@ -2,16 +2,15 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: "{app_name}"
-    celery: "true"
-  name: "{worker_name}"
+    app: "{app_name}-flower"
+  name: "{app_name}-flower"
   namespace: "{namespace}"
 spec:
   minReadySeconds: 10
-  replicas: "{num_of_workers}"
+  replicas: "{replicas}"
   selector:
     matchLabels:
-      run: "{app_name}"
+      run: "{app_name}-flower"
   strategy:
     rollingUpdate:
       maxSurge: 20%
@@ -20,19 +19,17 @@ spec:
   template:
     metadata:
       labels:
-        run: "{app_name}"
+        run: "{app_name}-flower"
     spec:
       containers:
-      - name: "{worker_name}"
+      - name: "{app_name}-flower"
         image: "{image}"
+        ports:
+          - containerPort: "{flower_port}"
         args:
         - --app="{celery_app}"
-        - worker
-        - --queues="{queues}"
-        - --loglevel="{loglevel}"
-        - --concurrency="{concurrency}"
         command:
-        - celery
+        - flower
         imagePullPolicy: Always
         resources:
           limits:

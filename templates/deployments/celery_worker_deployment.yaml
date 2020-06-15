@@ -11,7 +11,7 @@ spec:
   replicas: "{num_of_workers}"
   selector:
     matchLabels:
-      run: "{app_name}"
+      app: "{app_name}"
   strategy:
     rollingUpdate:
       maxSurge: 20%
@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       labels:
-        run: "{app_name}"
+        app: "{app_name}"
     spec:
       containers:
       - name: "{worker_name}"
