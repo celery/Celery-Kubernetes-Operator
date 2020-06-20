@@ -90,18 +90,18 @@ spec:
               type: object
               x-kubernetes-preserve-unknown-fields: true
       additionalPrinterColumns:
-        - name: Duration
-          type: string
-          priority: 0
-          jsonPath: .spec.duration
-          description: For how long the pod should sleep.
         - name: Children
           type: string
           priority: 0
-          jsonPath: .status.create_fn.children
-          description: The children pods created.
-        - name: Message
+          jsonPath: .status.create_fn.children_count
+          description: Number of children successfully created by handler
+        - name: Status
           type: string
           priority: 0
-          jsonPath: .status.create_fn.message
-          description: As returned from the handler (sometimes).
+          jsonPath: .status.create_fn.status
+          description: Status as returned from the handler
+        - name: Age
+          type: date
+          priority: 0
+          jsonPath: .metadata.creationTimestamp
+          description: Age of custom object

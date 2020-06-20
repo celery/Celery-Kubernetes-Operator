@@ -14,36 +14,50 @@ def create_fn(spec, name, namespace, logger, **kwargs):
         4. Define and expolre a flower Service to keep a watch on those metrics
         5. Scale/Downscale on the basis of task queue length
     """
+    result = {}
+    children_count = 0
+    status = 'Creating'
 
     # 1. Validation of spec
     val, err_msg = validate_spec(spec)
     if err_msg:
+        status = 'Failed validation'
         raise kopf.PermanentError(f"{err_msg}. Got {val}")
 
     api = kubernetes.client.CoreV1Api()
     apps_api_instance = kubernetes.client.AppsV1Api()
 
     # 2. Deployment for celery workers
-    deployed_celery_obj = deploy_celery_workers(
-        apps_api_instance, namespace, spec
+    worker_deployment_name = deploy_celery_workers(
+        apps_api_instance, namespace, spec, logger
     )
-    logger.info(f"Celery worker deployment created: %s", deployed_celery_obj)
+    result.update({'worker_deployment': worker_deployment_name})
+    children_count += 1
 
     flower_port = 5555
     # 3. Deployment for flower
-    deployed_flower_obj = deploy_flower(
-        apps_api_instance, namespace, spec, flower_port
+    flower_deployment_name = deploy_flower(
+        apps_api_instance, namespace, spec, flower_port, logger
     )
-    logger.info(f"Flower deployment has been created: %s", deployed_flower_obj)
+    result.update({'flower_deployment': flower_deployment_name})
+    children_count += 1
 
     # 4. Expose flower service
-    flower_svc_obj = expose_flower_service(
-        api, namespace, spec, flower_port
+    flower_svc_name = expose_flower_service(
+        api, namespace, spec, flower_port, logger
     )
-    logger.info(f"Flower service has been created: %s", flower_svc_obj)
+    result.update({'flower_service': flower_svc_name})
+    children_count += 1
+    status = 'Success'
+
+    return {
+        'status': status,
+        'children_count': children_count,
+        'children': result
+    }
 
 
-def deploy_celery_workers(apps_api, namespace, spec):
+def deploy_celery_workers(apps_api, namespace, spec, logger):
     path = os.path.join(
         os.path.dirname(__file__),
         'templates/deployments/celery_worker_deployment.yaml'
@@ -72,34 +86,20 @@ def deploy_celery_workers(apps_api, namespace, spec):
     data = yaml.safe_load(text)
     mark_as_child(data)
 
-    return apps_api.create_namespaced_deployment(
+    deployed_obj = apps_api.create_namespaced_deployment(
         namespace=namespace,
         body=data
     )
-
-
-def expose_flower_service(api, namespace, spec, flower_port):
-    path = os.path.join(
-        os.path.dirname(__file__),
-        'templates/services/flower_service.yaml'
-    )
-    tmpl = open(path, 'rt').read()
-
-    text = tmpl.format(
-        namespace=namespace,
-        app_name=spec['app_name'],
-        flower_port=flower_port
-    )
-    data = yaml.safe_load(text)
-    mark_as_child(data)
-
-    return api.create_namespaced_service(
-        namespace=namespace,
-        body=data
+    deployment_name = deployed_obj.metadata.name
+    logger.info(
+        f"Deployment for celery workers successfully created with name: %s",
+        deployment_name
     )
 
+    return deployment_name
 
-def deploy_flower(apps_api, namespace, spec, flower_port):
+
+def deploy_flower(apps_api, namespace, spec, flower_port, logger):
     path = os.path.join(
         os.path.dirname(__file__),
         'templates/deployments/flower_deployment.yaml'
@@ -124,10 +124,45 @@ def deploy_flower(apps_api, namespace, spec, flower_port):
     data = yaml.safe_load(text)
     mark_as_child(data)
 
-    return apps_api.create_namespaced_deployment(
+    deployed_obj = apps_api.create_namespaced_deployment(
         namespace=namespace,
         body=data
     )
+    deployment_name = deployed_obj.metadata.name
+    logger.info(
+        f"Deployment for celery flower successfully created with name: %s",
+        deployment_name
+    )
+
+    return deployment_name
+
+
+def expose_flower_service(api, namespace, spec, flower_port, logger):
+    path = os.path.join(
+        os.path.dirname(__file__),
+        'templates/services/flower_service.yaml'
+    )
+    tmpl = open(path, 'rt').read()
+
+    text = tmpl.format(
+        namespace=namespace,
+        app_name=spec['app_name'],
+        flower_port=flower_port
+    )
+    data = yaml.safe_load(text)
+    mark_as_child(data)
+
+    svc_obj = api.create_namespaced_service(
+        namespace=namespace,
+        body=data
+    )
+    flower_svc_name = svc_obj.metadata.name
+    logger.info(
+        f"Flower service successfully created with name: %s",
+        flower_svc_name
+    )
+
+    return flower_svc_name
 
 
 def mark_as_child(data):
@@ -140,7 +175,7 @@ def mark_as_child(data):
 def validate_stuff(spec):
     """
         1. If the deployment/svc already exists, k8s throws error
-        2. Cascading deletion on object deletion
+        2. Response and spec classes and enums
     """
     pass
 
