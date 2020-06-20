@@ -31,11 +31,15 @@ def create_fn(spec, name, namespace, logger, **kwargs):
 
     flower_port = 5555
     # 3. Deployment for flower
-    deployed_flower_obj = deploy_flower(apps_api_instance, namespace, spec, flower_port)
+    deployed_flower_obj = deploy_flower(
+        apps_api_instance, namespace, spec, flower_port
+    )
     logger.info(f"Flower deployment has been created: %s", deployed_flower_obj)
 
     # 4. Expose flower service
-    flower_svc_obj = expose_flower_service(api, namespace, spec, flower_port)
+    flower_svc_obj = expose_flower_service(
+        api, namespace, spec, flower_port
+    )
     logger.info(f"Flower service has been created: %s", flower_svc_obj)
 
 
@@ -66,6 +70,7 @@ def deploy_celery_workers(apps_api, namespace, spec):
         req_mem=req_resources['memory']
     )
     data = yaml.safe_load(text)
+    mark_as_child(data)
 
     return apps_api.create_namespaced_deployment(
         namespace=namespace,
@@ -86,6 +91,7 @@ def expose_flower_service(api, namespace, spec, flower_port):
         flower_port=flower_port
     )
     data = yaml.safe_load(text)
+    mark_as_child(data)
 
     return api.create_namespaced_service(
         namespace=namespace,
@@ -116,11 +122,19 @@ def deploy_flower(apps_api, namespace, spec, flower_port):
         req_mem=req_resources['memory']
     )
     data = yaml.safe_load(text)
+    mark_as_child(data)
 
     return apps_api.create_namespaced_deployment(
         namespace=namespace,
         body=data
     )
+
+
+def mark_as_child(data):
+    """
+        Marks the incoming data as child of celeryapplications
+    """
+    kopf.adopt(data)
 
 
 def validate_stuff(spec):
