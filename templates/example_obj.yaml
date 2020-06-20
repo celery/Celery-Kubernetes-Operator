@@ -1,30 +1,30 @@
 apiVersion: grofers.com/v1
 kind: CeleryApplication
 metadata:
-  name: celery-obj
+  name: example-celery-obj
 spec:
   app_name: celery-crd-example
   celery_app: 'app:celery_app'
-  image: docker-registry/my-awesome-docker-image
-  worker_name: cashback-celery-worker
+  image: example-image
+  worker_name: example-celery-worker
   celery_config:
     num_of_workers: 2
     queues: high_priority
     loglevel: info
     concurrency: 2
     resources:
-      limits:
-        cpu: '1.1'
-        memory: 2.2Gi
       requests:
-        cpu: '1'
-        memory: 2.0Gi
+        cpu: "100m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
   flower_config:
     replicas: 1
     resources:
-      limits:
-        cpu: '1.1'
-        memory: 2.2Gi
       requests:
-        cpu: '1'
-        memory: 2.0Gi
+        cpu: "100m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"

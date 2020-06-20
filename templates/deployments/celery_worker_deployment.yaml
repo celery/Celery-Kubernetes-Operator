@@ -2,16 +2,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: "{app_name}"
+    app: {app_name}
     celery: "true"
-  name: "{worker_name}"
-  namespace: "{namespace}"
+  name: {worker_name}
+  namespace: {namespace}
 spec:
   minReadySeconds: 10
-  replicas: "{num_of_workers}"
+  replicas: {num_of_workers}
   selector:
     matchLabels:
-      app: "{app_name}"
+      app: {app_name}
   strategy:
     rollingUpdate:
       maxSurge: 20%
@@ -20,20 +20,19 @@ spec:
   template:
     metadata:
       labels:
-        app: "{app_name}"
+        app: {app_name}
     spec:
       containers:
-      - name: "{worker_name}"
-        image: "{image}"
+      - name: {worker_name}
+        image: {image}
+        imagePullPolicy: Never
+        command: ["celery"]
         args:
-        - --app="{celery_app}"
-        - worker
-        - --queues="{queues}"
-        - --loglevel="{loglevel}"
-        - --concurrency="{concurrency}"
-        command:
-        - celery
-        imagePullPolicy: Always
+        - "--app={celery_app}"
+        - "worker"
+        - "--queues={queues}"
+        - "--loglevel={loglevel}"
+        - "--concurrency={concurrency}"
         resources:
           limits:
             cpu: "{lim_cpu}"
@@ -41,5 +40,3 @@ spec:
           requests:
             cpu: "{req_cpu}"
             memory: "{req_mem}"
-      restartPolicy: Always
-      terminationGracePeriodSeconds: 30

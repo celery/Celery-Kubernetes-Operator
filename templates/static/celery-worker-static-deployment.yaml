@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: celery-crd-example
+    celery: "true"
+  name: celery-worker
+  namespace: default
+spec:
+  minReadySeconds: 10
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: celery-crd-example
+  strategy:
+    rollingUpdate:
+      maxSurge: 20%
+      maxUnavailable: 0%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: celery-crd-example
+    spec:
+      containers:
+      - name: example-celery-container
+        image: example-image
+        imagePullPolicy: Never
+        command: ["celery"]
+        args:
+        - "--app=app:celery_app"
+        - "worker"
+        - "--queues=default"
+        - "--loglevel=info"
+        - "--concurrency=2"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+      restartPolicy: Always

@@ -21,21 +21,34 @@ def create_fn(spec, name, namespace, logger, **kwargs):
         raise kopf.PermanentError(f"{err_msg}. Got {val}")
 
     api = kubernetes.client.CoreV1Api()
+    apps_api_instance = kubernetes.client.AppsV1Api()
+
     # 2. Deployment for celery workers
-    deploy_celery_workers(api, namespace, spec)
+    deployed_celery_obj = deploy_celery_workers(
+        apps_api_instance, namespace, spec
+    )
+    logger.info(f"Celery worker deployment created: %s", deployed_celery_obj)
+
+    flower_port = 5555
     # 3. Deployment for flower
-    deploy_flower(api, namespace, spec)
+    deployed_flower_obj = deploy_flower(apps_api_instance, namespace, spec, flower_port)
+    logger.info(f"Flower deployment has been created: %s", deployed_flower_obj)
+
     # 4. Expose flower service
-    expose_flower_service(api, namespace, spec)
+    flower_svc_obj = expose_flower_service(api, namespace, spec, flower_port)
+    logger.info(f"Flower service has been created: %s", flower_svc_obj)
 
 
-def deploy_celery_workers(api, namespace, spec):
-    path = os.path.join(os.path.dirname(__file__), 'templates/celery_worker_deployment.yaml')
+def deploy_celery_workers(apps_api, namespace, spec):
+    path = os.path.join(
+        os.path.dirname(__file__),
+        'templates/deployments/celery_worker_deployment.yaml'
+    )
     tmpl = open(path, 'rt').read()
 
     celery_config = spec['celery_config']
-    req_resources = spec['resources']['requests']
-    lim_resources = spec['resources']['limits']
+    req_resources = celery_config['resources']['requests']
+    lim_resources = celery_config['resources']['limits']
 
     text = tmpl.format(
         namespace=namespace,
@@ -47,22 +60,24 @@ def deploy_celery_workers(api, namespace, spec):
         queues=celery_config['queues'],
         loglevel=celery_config['loglevel'],
         concurrency=celery_config['concurrency'],
-        lim_cpu=lim_resources['lim_cpu'],
-        lim_mem=lim_resources['lim_mem'],
-        req_cpu=req_resources['req_cpu'],
-        req_mem=req_resources['req_mem']
+        lim_cpu=lim_resources['cpu'],
+        lim_mem=lim_resources['memory'],
+        req_cpu=req_resources['cpu'],
+        req_mem=req_resources['memory']
     )
     data = yaml.safe_load(text)
 
-    obj = api.create_namespaced_deployment(
+    return apps_api.create_namespaced_deployment(
         namespace=namespace,
         body=data
     )
-    logger.info(f"Celery worker deployment created: %s", obj)
 
 
-def expose_flower_service(api, namespace, spec):
-    path = os.path.join(os.path.dirname(__file__), 'templates/flower_service.yaml')
+def expose_flower_service(api, namespace, spec, flower_port):
+    path = os.path.join(
+        os.path.dirname(__file__),
+        'templates/services/flower_service.yaml'
+    )
     tmpl = open(path, 'rt').read()
 
     text = tmpl.format(
@@ -72,21 +87,22 @@ def expose_flower_service(api, namespace, spec):
     )
     data = yaml.safe_load(text)
 
-    obj = api.create_namespaced_service(
+    return api.create_namespaced_service(
         namespace=namespace,
         body=data
     )
-    logger.info(f"Flower Service has been created: %s", obj)
 
 
-def deploy_flower(api, namespace, spec):
-    path = os.path.join(os.path.dirname(__file__), 'templates/flower_deployment.yaml')
+def deploy_flower(apps_api, namespace, spec, flower_port):
+    path = os.path.join(
+        os.path.dirname(__file__),
+        'templates/deployments/flower_deployment.yaml'
+    )
     tmpl = open(path, 'rt').read()
 
     flower_config = spec['flower_config']
-    flower_port = 5555
-    req_resources = spec['resources']['requests']
-    lim_resources = spec['resources']['limits']
+    req_resources = flower_config['resources']['requests']
+    lim_resources = flower_config['resources']['limits']
     text = tmpl.format(
         namespace=namespace,
         app_name=spec['app_name'],
@@ -94,18 +110,25 @@ def deploy_flower(api, namespace, spec):
         image=spec['image'],
         flower_port=flower_port,
         replicas=flower_config['replicas'],
-        lim_cpu=lim_resources['lim_cpu'],
-        lim_mem=lim_resources['lim_mem'],
-        req_cpu=req_resources['req_cpu'],
-        req_mem=req_resources['req_mem']
+        lim_cpu=lim_resources['cpu'],
+        lim_mem=lim_resources['memory'],
+        req_cpu=req_resources['cpu'],
+        req_mem=req_resources['memory']
     )
     data = yaml.safe_load(text)
 
-    obj = api.create_namespaced_deployment(
+    return apps_api.create_namespaced_deployment(
         namespace=namespace,
         body=data
     )
-    logger.info(f"Flower deployment has been created: %s", obj)
+
+
+def validate_stuff(spec):
+    """
+        1. If the deployment/svc already exists, k8s throws error
+        2. Cascading deletion on object deletion
+    """
+    pass
 
 
 def validate_spec(spec):
@@ -113,7 +136,7 @@ def validate_spec(spec):
         Validates the incoming spec
         @returns - True/False, Error Message
     """
-    size = spec.get('size')
-    if not size:
-        return size, "Size must be set"
+    # size = spec.get('size')
+    # if not size:
+    #     return size, "Size must be set"
     return None, None
