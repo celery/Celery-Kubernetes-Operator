@@ -34,17 +34,16 @@ def create_fn(spec, name, namespace, logger, **kwargs):
     result.update({'worker_deployment': worker_deployment_name})
     children_count += 1
 
-    flower_port = 5555
     # 3. Deployment for flower
     flower_deployment_name = deploy_flower(
-        apps_api_instance, namespace, spec, flower_port, logger
+        apps_api_instance, namespace, spec, logger
     )
     result.update({'flower_deployment': flower_deployment_name})
     children_count += 1
 
     # 4. Expose flower service
     flower_svc_name = expose_flower_service(
-        api, namespace, spec, flower_port, logger
+        api, namespace, spec, logger
     )
     result.update({'flower_service': flower_svc_name})
     children_count += 1
@@ -99,7 +98,7 @@ def deploy_celery_workers(apps_api, namespace, spec, logger):
     return deployment_name
 
 
-def deploy_flower(apps_api, namespace, spec, flower_port, logger):
+def deploy_flower(apps_api, namespace, spec, logger):
     path = os.path.join(
         os.path.dirname(__file__),
         'templates/deployments/flower_deployment.yaml'
@@ -114,7 +113,6 @@ def deploy_flower(apps_api, namespace, spec, flower_port, logger):
         app_name=spec['app_name'],
         celery_app=spec['celery_app'],
         image=spec['image'],
-        flower_port=flower_port,
         replicas=flower_config['replicas'],
         lim_cpu=lim_resources['cpu'],
         lim_mem=lim_resources['memory'],
@@ -137,7 +135,7 @@ def deploy_flower(apps_api, namespace, spec, flower_port, logger):
     return deployment_name
 
 
-def expose_flower_service(api, namespace, spec, flower_port, logger):
+def expose_flower_service(api, namespace, spec, logger):
     path = os.path.join(
         os.path.dirname(__file__),
         'templates/services/flower_service.yaml'
@@ -146,8 +144,7 @@ def expose_flower_service(api, namespace, spec, flower_port, logger):
 
     text = tmpl.format(
         namespace=namespace,
-        app_name=spec['app_name'],
-        flower_port=flower_port
+        app_name=spec['app_name']
     )
     data = yaml.safe_load(text)
     mark_as_child(data)

@@ -25,7 +25,7 @@ spec:
       - name: {app_name}-flower
         image: {image}
         ports:
-          - containerPort: {flower_port}
+          - containerPort: 5555
         args:
         - --app={celery_app}
         command:
