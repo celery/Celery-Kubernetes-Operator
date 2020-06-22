@@ -1,11 +1,17 @@
 import os
 import kopf
 import kubernetes
+from collections import namedtuple
 
 from deployment_utils import (
     deploy_celery_workers,
     deploy_flower,
     expose_flower_service
+)
+from update_utils import (
+    update_all_deployments,
+    update_celery_deployment,
+    update_flower_deployment
 )
 
 
@@ -59,6 +65,71 @@ def create_fn(spec, name, namespace, logger, **kwargs):
         'children_count': children_count,
         'children': result
     }
+
+
+@kopf.on.update('grofers.com', 'v1', 'celeryapplications')
+def update_fn(spec, status, namespace, logger, **kwargs):
+    # TODO - app name still cannot be updated(Fix that)
+    diff = kwargs.get('diff')
+    modified_spec = get_modified_spec_object(diff)
+
+    api = kubernetes.client.CoreV1Api()
+    apps_api_instance = kubernetes.client.AppsV1Api()
+
+    if modified_spec.common_spec:
+        # if common spec was updated, need to update all deployments
+        return update_all_deployments(
+            api, apps_api_instance, spec, status, namespace
+        )
+    else:
+        result = {}
+        if modified_spec.celery_spec:
+            result.update({
+                'worker_deployment': update_celery_deployment(
+                    apps_api_instance, spec, status, namespace
+                )
+            })
+
+        if modified_spec.flower_spec:
+            result.update({
+                'flower_deployment': update_flower_deployment(
+                    apps_api_instance, spec, status, namespace
+                )
+            })
+        return result
+
+
+def get_modified_spec_object(diff):
+    """
+        @param: diff - arg provided by kopf when an object is updated
+        diff format - Tuple of (op, (fields tuple), old, new)
+        @returns ModifiedSpec namedtuple signifying which spec was updated
+    """
+    common_spec_checklist = ['app_name', 'celery_app', 'image', 'worker_name']
+    celery_config_checklist = ['celery_config']
+    flower_config_checklist = ['flower_config']
+
+    common_spec_modified = False
+    celery_spec_modified = False
+    flower_spec_modified = False
+
+    # TODO - Optimize this loop maybe
+    for op, fields, old, new in diff:
+        if any(field in fields for field in common_spec_checklist):
+            common_spec_modified = True
+        if any(field in fields for field in celery_config_checklist):
+            celery_spec_modified = True
+        if any(field in fields for field in flower_config_checklist):
+            flower_spec_modified = True
+
+    # a namedtuple to give structure to which spec was updated
+    ModifiedSpec = namedtuple('ModifiedSpec', ['common_spec', 'celery_spec', 'flower_spec'])
+
+    return ModifiedSpec(
+        common_spec=common_spec_modified,
+        celery_spec=celery_spec_modified,
+        flower_spec=flower_spec_modified
+    )
 
 
 def validate_stuff(spec):

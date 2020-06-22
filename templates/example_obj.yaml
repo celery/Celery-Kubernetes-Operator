@@ -6,8 +6,8 @@ spec:
   app_name: celery-crd-example
   celery_app: 'app:celery_app'
   image: example-image
-  worker_name: example-celery-worker
   celery_config:
+    worker_name: example-celery-worker
     num_of_workers: 2
     queues: high_priority
     loglevel: info
