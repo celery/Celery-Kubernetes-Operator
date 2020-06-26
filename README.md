@@ -1,4 +1,4 @@
-# Celery-Kubernetes-Operator
+# Celery-Kubernetes-Operator(WIP)
 A basic Celery operator written in Python. To be used to manage simple Celery applications on a Kubernetes cluster. It is being built as a demo project to proposed EuroPython 2020 proposal. With some minor tweaks, to be used in Grofers production as well in the future. This operator is being written with the help of [KOPF](https://github.com/zalando-incubator/kopf) framework open sourced by Zalando SE.
 
 # Project Scope
