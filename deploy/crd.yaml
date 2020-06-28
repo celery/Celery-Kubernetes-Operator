@@ -1,49 +1,58 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: celeryapplications.grofers.com
+  name: celery.celeryproject.org
 spec:
   scope: Namespaced
-  group: grofers.com
+  group: celeryproject.org
   names:
-    kind: CeleryApplication
-    plural: celeryapplications
-    singular: celeryapplication
+    kind: Celery
+    listKind: CeleryList
+    plural: celery
+    singular: celery
     shortNames:
-      - celery
-      - capps
+      - cel
       - capp
-  versions:
-    - name: v1
+  versions: 
+    - name: v1alpha1
       served: true
       storage: true
       schema:
         openAPIV3Schema:
           type: object
+          required: ["spec"]
           properties:
             spec:
+              description: "spec defines the desired state and params for celery cluster"
               type: object
               properties:
-                app_name:
-                  type: string
-                celery_app:
-                  type: string
-                image:
-                  type: string
-                worker_name:
-                  type: string
-                celery_config:
+                common:
+                  description: "common configuration parameters for all worker and flower deployments"
+                  required: ["appName", "celeryApp", "image"]
                   type: object
                   properties:
-                    num_of_workers:
+                    image:
+                      description: "container image name to run in the worker and flower deployments"
+                      type: string
+                    appName:
+                      description: "app name for worker and flower deployments, will be suffixed accordingly"
+                      type: string
+                    celeryApp:
+                      description: "celery app instance to use (e.g. module.celery_app_attr_name)"
+                      type: string
+                workerSpec:
+                  description: "worker deployment specific parameters"
+                  type: object
+                  properties:
+                    numOfWorkers:
                       type: integer
                     queues:
                       type: string
-                    loglevel:
+                    logLevel:
                       type: string
                     concurrency:
                       type: integer
-                    max_tasks_per_child:
+                    maxTasksPerChild:
                       type: integer
                     resources:
                       type: object
@@ -63,7 +72,8 @@ spec:
                             memory:
                               type: string
                   x-kubernetes-preserve-unknown-fields: true
-                flower_config:
+                flowerSpec:
+                  description: "flower deployment specific parameters"
                   type: object
                   properties:
                     replicas:
@@ -88,7 +98,7 @@ spec:
                   x-kubernetes-preserve-unknown-fields: true
             status:
               type: object
-              x-kubernetes-preserve-unknown-fields: true
+              x-kubernetes-preserve-unknown-fields: true    
       additionalPrinterColumns:
         - name: Children
           type: string

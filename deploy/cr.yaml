@@ -1,16 +1,16 @@
-apiVersion: grofers.com/v1
-kind: CeleryApplication
+apiVersion: celeryproject.org/v1alpha1
+kind: Celery
 metadata:
   name: example-celery-obj
 spec:
-  app_name: celery-crd-example
-  celery_app: 'app:celery_app'
-  image: example-image
-  celery_config:
-    worker_name: example-celery-worker
-    num_of_workers: 2
-    queues: high_priority
-    loglevel: info
+  common:
+    appName: celery-crd-example
+    celeryApp: 'app:celery_app'
+    image: example-image
+  workerSpec:
+    numOfWorkers: 2
+    queues: celery # default queue name
+    logLevel: debug
     concurrency: 2
     resources:
       requests:
@@ -19,7 +19,7 @@ spec:
       limits:
         cpu: "200m"
         memory: "128Mi"
-  flower_config:
+  flowerSpec:
     replicas: 1
     resources:
       requests:

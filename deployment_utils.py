@@ -10,19 +10,18 @@ def deploy_celery_workers(apps_api, namespace, spec, logger):
     )
     tmpl = open(path, 'rt').read()
 
-    celery_config = spec['celery_config']
+    celery_config = spec['workerSpec']
     req_resources = celery_config['resources']['requests']
     lim_resources = celery_config['resources']['limits']
 
     text = tmpl.format(
         namespace=namespace,
-        app_name=spec['app_name'],
-        celery_app=spec['celery_app'],
-        image=spec['image'],
-        worker_name=celery_config['worker_name'],
-        num_of_workers=celery_config['num_of_workers'],
+        app_name=spec['common']['appName'],
+        celery_app=spec['common']['celeryApp'],
+        image=spec['common']['image'],
+        num_of_workers=celery_config['numOfWorkers'],
         queues=celery_config['queues'],
-        loglevel=celery_config['loglevel'],
+        loglevel=celery_config['logLevel'],
         concurrency=celery_config['concurrency'],
         lim_cpu=lim_resources['cpu'],
         lim_mem=lim_resources['memory'],
@@ -52,14 +51,14 @@ def deploy_flower(apps_api, namespace, spec, logger):
     )
     tmpl = open(path, 'rt').read()
 
-    flower_config = spec['flower_config']
+    flower_config = spec['flowerSpec']
     req_resources = flower_config['resources']['requests']
     lim_resources = flower_config['resources']['limits']
     text = tmpl.format(
         namespace=namespace,
-        app_name=spec['app_name'],
-        celery_app=spec['celery_app'],
-        image=spec['image'],
+        app_name=spec['common']['appName'],
+        celery_app=spec['common']['celeryApp'],
+        image=spec['common']['image'],
         replicas=flower_config['replicas'],
         lim_cpu=lim_resources['cpu'],
         lim_mem=lim_resources['memory'],
@@ -91,7 +90,7 @@ def expose_flower_service(api, namespace, spec, logger):
 
     text = tmpl.format(
         namespace=namespace,
-        app_name=spec['app_name']
+        app_name=spec['common']['appName']
     )
     data = yaml.safe_load(text)
     mark_as_child(data)

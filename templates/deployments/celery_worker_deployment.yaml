@@ -4,7 +4,7 @@ metadata:
   labels:
     app: {app_name}
     celery: "true"
-  name: {worker_name}
+  name: {app_name}-celery-worker
   namespace: {namespace}
 spec:
   minReadySeconds: 10
@@ -23,7 +23,7 @@ spec:
         app: {app_name}
     spec:
       containers:
-      - name: {worker_name}
+      - name: {app_name}-celery-worker
         image: {image}
         imagePullPolicy: Never
         command: ["celery"]

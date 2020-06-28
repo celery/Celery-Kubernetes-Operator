@@ -15,7 +15,7 @@ from update_utils import (
 )
 
 
-@kopf.on.create('grofers.com', 'v1', 'celeryapplications')
+@kopf.on.create('celeryproject.org', 'v1alpha1', 'celery')
 def create_fn(spec, name, namespace, logger, **kwargs):
     """
         TODO -
@@ -67,7 +67,7 @@ def create_fn(spec, name, namespace, logger, **kwargs):
     }
 
 
-@kopf.on.update('grofers.com', 'v1', 'celeryapplications')
+@kopf.on.update('celeryproject.org', 'v1alpha1', 'celery')
 def update_fn(spec, status, namespace, logger, **kwargs):
     # TODO - app name still cannot be updated(Fix that)
     diff = kwargs.get('diff')
@@ -83,7 +83,7 @@ def update_fn(spec, status, namespace, logger, **kwargs):
         )
     else:
         result = {}
-        if modified_spec.celery_spec:
+        if modified_spec.worker_spec:
             result.update({
                 'worker_deployment': update_celery_deployment(
                     apps_api_instance, spec, status, namespace
@@ -105,9 +105,9 @@ def get_modified_spec_object(diff):
         diff format - Tuple of (op, (fields tuple), old, new)
         @returns ModifiedSpec namedtuple signifying which spec was updated
     """
-    common_spec_checklist = ['app_name', 'celery_app', 'image', 'worker_name']
-    celery_config_checklist = ['celery_config']
-    flower_config_checklist = ['flower_config']
+    common_spec_checklist = ['appName', 'celeryApp', 'image']
+    celery_config_checklist = ['workerSpec']
+    flower_config_checklist = ['flowerSpec']
 
     common_spec_modified = False
     celery_spec_modified = False
@@ -123,11 +123,11 @@ def get_modified_spec_object(diff):
             flower_spec_modified = True
 
     # a namedtuple to give structure to which spec was updated
-    ModifiedSpec = namedtuple('ModifiedSpec', ['common_spec', 'celery_spec', 'flower_spec'])
+    ModifiedSpec = namedtuple('ModifiedSpec', ['common_spec', 'worker_spec', 'flower_spec'])
 
     return ModifiedSpec(
         common_spec=common_spec_modified,
-        celery_spec=celery_spec_modified,
+        worker_spec=celery_spec_modified,
         flower_spec=flower_spec_modified
     )
 

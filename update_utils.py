@@ -18,24 +18,24 @@ def update_all_deployments(api, apps_api_instance, spec, status, namespace):
 
 
 def update_celery_deployment(apps_api_instance, spec, status, namespace):
-    celery_config = spec['celery_config']
+    worker_spec = spec['workerSpec']
     worker_spec_dict = {
         'args': args_list_from_spec_params(
-            celery_app=spec['celery_app'],
-            queues=celery_config['queues'],
-            loglevel=celery_config['loglevel'],
-            concurrency=celery_config['concurrency']
+            celery_app=spec['common']['celeryApp'],
+            queues=worker_spec['queues'],
+            loglevel=worker_spec['logLevel'],
+            concurrency=worker_spec['concurrency']
         ),
         'command': ["celery"],
-        'image': spec['image'],
-        'name': spec['worker_name'],
-        'resources': celery_config['resources']
+        'image': spec['common']['image'],
+        'name': f"{spec['common']['appName']}-celery-worker",
+        'resources': worker_spec['resources']
     }
 
     # JSON way of submitting spec to deploy/patch
     patch_body = {
         "spec": {
-            "replicas": celery_config['num_of_workers'],
+            "replicas": worker_spec['numOfWorkers'],
             "template": {
                 "spec": {
                     "containers": [
@@ -55,23 +55,23 @@ def update_celery_deployment(apps_api_instance, spec, status, namespace):
 
 
 def update_flower_deployment(apps_api_instance, spec, status, namespace):
-    flower_config = spec['flower_config']
+    flower_spec = spec['flowerSpec']
 
     flower_spec_dict = {
-        'args': [spec['celery_app']],
+        'args': [spec['common']['celeryApp']],
         'command': ['flower'],
-        'image': spec['image'],
-        'name': f"{spec['worker_name']}-flower",
+        'image': spec['common']['image'],
+        'name': f"{spec['common']['appName']}-flower",
         'ports': [
             {"containerPort": 5555}
         ],
-        'resources': flower_config['resources']
+        'resources': flower_spec['resources']
     }
 
     # JSON way of submitting spec to deploy/patch
     patch_body = {
         "spec": {
-            "replicas": flower_config['replicas'],
+            "replicas": flower_spec['replicas'],
             "template": {
                 "spec": {
                     "containers": [
@@ -96,7 +96,7 @@ def update_flower_service(api, spec, status, namespace):
     patch_body = {
         "spec": {
             "selector": {
-                "run": f"{spec['app_name']}-flower"
+                "run": f"{spec['common']['appName']}-flower"
             }
         }
     }

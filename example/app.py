@@ -30,7 +30,3 @@ celery_app = make_celery(flask_app)
 @celery_app.task()
 def add(a, b):
     return a + b
-
-
-if __name__ == '__main__':
-    add.delay(4, 5)

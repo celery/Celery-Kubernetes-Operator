@@ -9,4 +9,4 @@ COPY . .
 
 WORKDIR example
 
-CMD [ "python", "app.py" ]
+CMD [ "python", "run_task.py" ]
