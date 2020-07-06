@@ -28,3 +28,12 @@ spec:
       limits:
         cpu: "200m"
         memory: "128Mi"
+  scaleTargetRef:
+  - kind: worker
+    minReplicas: 2
+    maxReplicas: 5
+    metrics:
+    - name: message_queue
+      target:
+        type: length
+        averageValue: 100

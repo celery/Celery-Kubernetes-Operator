@@ -26,7 +26,7 @@ itsdangerous==1.1.0
 jedi==0.17.0
 Jinja2==2.11.2
 kombu==4.6.10
-kopf==0.26
+kopf==0.27
 kubernetes==11.0.0
 MarkupSafe==1.1.1
 multidict==4.7.6

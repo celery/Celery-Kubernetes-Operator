@@ -35,13 +35,13 @@ def deploy_celery_workers(apps_api, namespace, spec, logger):
         namespace=namespace,
         body=data
     )
-    deployment_name = deployed_obj.metadata.name
+
     logger.info(
         f"Deployment for celery workers successfully created with name: %s",
-        deployment_name
+        deployed_obj.metadata.name
     )
 
-    return deployment_name
+    return deployed_obj
 
 
 def deploy_flower(apps_api, namespace, spec, logger):
@@ -72,13 +72,12 @@ def deploy_flower(apps_api, namespace, spec, logger):
         namespace=namespace,
         body=data
     )
-    deployment_name = deployed_obj.metadata.name
     logger.info(
         f"Deployment for celery flower successfully created with name: %s",
-        deployment_name
+        deployed_obj.metadata.name
     )
 
-    return deployment_name
+    return deployed_obj
 
 
 def expose_flower_service(api, namespace, spec, logger):
@@ -99,13 +98,11 @@ def expose_flower_service(api, namespace, spec, logger):
         namespace=namespace,
         body=data
     )
-    flower_svc_name = svc_obj.metadata.name
     logger.info(
         f"Flower service successfully created with name: %s",
-        flower_svc_name
+        svc_obj.metadata.name
     )
-
-    return flower_svc_name
+    return svc_obj
 
 
 def mark_as_child(data):
