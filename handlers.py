@@ -2,6 +2,7 @@ import os
 import kopf
 import kubernetes
 import requests
+import constants
 from math import ceil
 from collections import namedtuple
 
@@ -12,7 +13,7 @@ from deployment_utils import (
 )
 from update_utils import (
     update_all_deployments,
-    update_celery_deployment,
+    update_worker_deployment,
     update_flower_deployment
 )
 
@@ -20,12 +21,7 @@ from update_utils import (
 @kopf.on.create('celeryproject.org', 'v1alpha1', 'celery')
 def create_fn(spec, name, namespace, logger, **kwargs):
     """
-        TODO -
-        1. Validate the spec for incoming obj
-        2. Create a config-map for celery
-        3. Instantiate a celery Deployment with the specified parameters
-        4. Define and expolre a flower Service to keep a watch on those metrics
-        5. Scale/Downscale on the basis of task queue length
+        Celery custom resource creation handler
     """
     children_count = 0
 
@@ -56,33 +52,39 @@ def create_fn(spec, name, namespace, logger, **kwargs):
     children = [
         {
             'name': worker_deployment.metadata.name,
-            'replicas': worker_deployment.spec.replicas
+            'replicas': worker_deployment.spec.replicas,
+            'kind': constants.DEPLOYMENT_KIND,
+            'type': constants.WORKER_TYPE
         },
         {
             'name': flower_deployment.metadata.name,
-            'replicas': flower_deployment.spec.replicas
+            'replicas': flower_deployment.spec.replicas,
+            'kind': constants.DEPLOYMENT_KIND,
+            'type': constants.FLOWER_TYPE
         },
         {
             'name': flower_svc.metadata.name,
-            'spec': flower_svc.spec.to_dict()
+            'spec': flower_svc.spec.to_dict(),
+            'kind': constants.SERVICE_KIND,
+            'type': constants.FLOWER_TYPE
         }
     ]
 
     return {
         'children': children,
         'children_count': len(children),
-        'status': "CREATED"
+        'status': constants.STATUS_CREATED
     }
 
 
 @kopf.on.update('celeryproject.org', 'v1alpha1', 'celery')
 def update_fn(spec, status, namespace, logger, **kwargs):
-    # TODO - app name still cannot be updated(Fix that)
     diff = kwargs.get('diff')
     modified_spec = get_modified_spec_object(diff)
 
     api = kubernetes.client.CoreV1Api()
     apps_api_instance = kubernetes.client.AppsV1Api()
+    result = status.get('update_fn') or status.get('create_fn')
 
     if modified_spec.common_spec:
         # if common spec was updated, need to update all deployments
@@ -90,19 +92,28 @@ def update_fn(spec, status, namespace, logger, **kwargs):
             api, apps_api_instance, spec, status, namespace
         )
     else:
-        result = {}
         if modified_spec.worker_spec:
-            result.update({
-                'worker_deployment': update_celery_deployment(
-                    apps_api_instance, spec, status, namespace
-                )
+            # if worker spec was updated, just update worker deployments
+            worker_deployment = update_worker_deployment(
+                apps_api_instance, spec, status, namespace
+            )
+            deployment_status = next(child for child in result.get('children') if child['type'] == constants.WORKER_TYPE)  # NOQA
+
+            deployment_status.update({
+                'name': worker_deployment.metadata.name,
+                'replicas': worker_deployment.spec.replicas
             })
 
         if modified_spec.flower_spec:
-            result.update({
-                'flower_deployment': update_flower_deployment(
-                    apps_api_instance, spec, status, namespace
-                )
+            # if flower spec was updated, just update flower deployments
+            flower_deployment = update_flower_deployment(
+                apps_api_instance, spec, status, namespace
+            )
+            deployment_status = next(child for child in result.get('children') if child['type'] == constants.FLOWER_TYPE)  # NOQA
+
+            deployment_status.update({
+                'name': flower_deployment.metadata.name,
+                'replicas': flower_deployment.spec.replicas
             })
         return result
 
@@ -149,9 +160,9 @@ def check_flower_label(value, spec, **_):
 
 
 @kopf.timer('celeryproject.org', 'v1alpha1', 'celery',
-            initial_delay=5, interval=10, idle=10)
+            initial_delay=50000, interval=100000, idle=10)
 def message_queue_length(spec, status, **kwargs):
-    flower_svc_host = "http://192.168.64.2:31737"
+    flower_svc_host = "http://192.168.64.2:32289"
     url = f"{flower_svc_host}/api/queues/length"
     response = requests.get(url=url)
     if response.status_code == 200:
@@ -170,11 +181,11 @@ def get_current_replicas(child_name, status):
 
 
 def get_current_queue_len(child_name, status):
-    for queue in status.get('message_queue_length'):
+    for queue in status.get('message_queue_length', []):
         if queue.get('name') == child_name:
             return queue.get('messages')
 
-    return None
+    return 0
 
 
 @kopf.on.field('celeryproject.org', 'v1alpha1', 'celery',
@@ -192,9 +203,15 @@ def horizontal_autoscale(spec, status, namespace, **kwargs):
             queue_name = spec['workerSpec']['queues']
             current_queue_length = get_current_queue_len(queue_name, status)
             avg_queue_length = scaling_target['metrics'][0].get('target').get('averageValue')
-            updated_num_of_replicas = ceil(
-                current_replicas * (current_queue_length / avg_queue_length)
-            ) or min_replicas
+            updated_num_of_replicas = min(
+                max(
+                    ceil(
+                        current_replicas * (current_queue_length / avg_queue_length)
+                    ),
+                    min_replicas
+                ),
+                max_replicas
+            )
 
     patch_body = {
         "spec": {
