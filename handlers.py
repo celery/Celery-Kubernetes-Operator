@@ -159,17 +159,33 @@ def check_flower_label(value, spec, **_):
     return value == f"{spec['common']['appName']}-flower"
 
 
+def get_flower_svc_host(status):
+    """
+        Get latest flower SVC host from parent's status
+    """
+    handler = status.get('update_fn') or status.get('create_fn')
+
+    for child in handler.get('children'):
+        if child.get('kind') == constants.SERVICE_KIND and child.get('type') == constants.FLOWER_TYPE:  # NOQA
+            return f"{child.get('name')}:{child['spec']['ports'][0]['port']}"
+
+    return None
+
+
 @kopf.timer('celeryproject.org', 'v1alpha1', 'celery',
-            initial_delay=50000, interval=100000, idle=10)
+            initial_delay=5, interval=10, idle=10)
 def message_queue_length(spec, status, **kwargs):
-    flower_svc_host = "http://192.168.64.2:32289"
-    url = f"{flower_svc_host}/api/queues/length"
+    flower_svc_host = get_flower_svc_host(status)
+    if not flower_svc_host:
+        return
+
+    url = f"http://{flower_svc_host}/api/queues/length"
     response = requests.get(url=url)
     if response.status_code == 200:
         return response.json().get('active_queues')
 
     return {
-        "queue_length": None
+        "queue_length": 0
     }
 
 

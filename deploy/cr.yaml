@@ -4,7 +4,7 @@ metadata:
   name: example-celery-obj
 spec:
   common:
-    appName: celery-crd-example
+    appName: celery-example
     celeryApp: 'app:celery_app'
     image: example-image
   workerSpec:
