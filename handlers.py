@@ -23,7 +23,6 @@ def create_fn(spec, name, namespace, logger, **kwargs):
     """
         Celery custom resource creation handler
     """
-    children_count = 0
 
     # 1. Validation of spec
     val, err_msg = validate_spec(spec)
