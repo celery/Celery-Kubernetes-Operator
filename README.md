@@ -1,8 +1,8 @@
 # Celery-Kubernetes-Operator(WIP)
-A basic Celery operator written in Python. To be used to manage Celery applications on a Kubernetes cluster. It is being built as a demo project to proposed EuroPython 2020 [proposal](https://ep2020.europython.eu/talks/BbvZjFa-advanced-infrastructure-management-in-kubernetes-using-python/). 
-Beyond the conference based on feedback, it'll be pursued to be a production ready project.
+A basic Celery operator written in Python. To be used to manage Celery applications on a Kubernetes cluster. It started as a demo project to proposed EuroPython 2020 [proposal](https://ep2020.europython.eu/talks/BbvZjFa-advanced-infrastructure-management-in-kubernetes-using-python/). 
+It'll is currently being worked on to be a production ready project with Celery organization. [Here's](https://github.com/celery/ceps/pull/29) the merged CEP for the same.
 
-Please report an issue for improvement suggestions/feedback. This operator is being written with the help of [KOPF](https://github.com/zalando-incubator/kopf) framework open sourced by Zalando SE.
+Please report an issue for improvement suggestions/feedback. This operator is being written with the help of [KOPF](https://github.com/nolar/kopf) framework.
 
 # Project Scope
 The general idea is to bridge the gap between infrastructure and application developers where application developers can just spec out a simple celery deployment yaml and have to do nothing more than `kubectl apply -f <file_name>`to spin up their own celery cluster.
