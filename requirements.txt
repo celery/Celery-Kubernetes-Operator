@@ -1,4 +1,4 @@
-aiohttp==3.6.2
+aiohttp==3.7.4
 aiojobs==0.2.2
 amqp==2.6.0
 appnope==0.1.0
