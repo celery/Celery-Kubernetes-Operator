@@ -3236,39 +3236,6 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                scaleTargetRef:
-                  description: "auto scaling targets"
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      kind:
-                        description: "target of which kind (e.g worker, flower)"
-                        type: string
-                      minReplicas:
-                        description: "minimum number of replicas to keep"
-                        type: integer
-                      maxReplicas:
-                        description: "maximum number of replicas to keep"
-                        type: integer
-                      metrics:
-                        description: "specify metrics to scale/downscale the number of workers"
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            name:
-                              description: "name of metric. (e.g. message_queue)"
-                              type: string
-                            target:
-                              type: object
-                              properties:
-                                type:
-                                  description: "target metric type. (e.g. length)"
-                                  type: string
-                                averageValue:
-                                  description: "average metric value to maintain"
-                                  type: integer
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true    
