@@ -6,7 +6,7 @@ import yaml
 def deploy_celery_workers(apps_api, namespace, spec, logger):
     path = os.path.join(
         os.path.dirname(__file__),
-        'templates/deployments/celery_worker_deployment.yaml'
+        '../kubernetes/templates/deployments/celery_worker_deployment.yaml'
     )
     tmpl = open(path, 'rt').read()
 
@@ -47,7 +47,7 @@ def deploy_celery_workers(apps_api, namespace, spec, logger):
 def deploy_flower(apps_api, namespace, spec, logger):
     path = os.path.join(
         os.path.dirname(__file__),
-        'templates/deployments/flower_deployment.yaml'
+        '../kubernetes/templates/deployments/flower_deployment.yaml'
     )
     tmpl = open(path, 'rt').read()
 
@@ -83,7 +83,7 @@ def deploy_flower(apps_api, namespace, spec, logger):
 def expose_flower_service(api, namespace, spec, logger):
     path = os.path.join(
         os.path.dirname(__file__),
-        'templates/services/flower_service.yaml'
+        '../kubernetes/templates/services/flower_service.yaml'
     )
     tmpl = open(path, 'rt').read()
 

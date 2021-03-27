@@ -1,17 +1,14 @@
-import os
-import kopf
-import kubernetes
-import requests
-import constants
 from math import ceil
 from collections import namedtuple
+import requests
+import kubernetes
+import kopf
+import constants
+from models.celery_custom_resource import celery_custom_resource_from_dict
+from kubernetes_utils.worker_deployment_generator import WorkerDeploymentGenerator
+from kubernetes_utils.flower_deployment_generator import FlowerDeploymentGenerator
 
-from deployment_utils import (
-    deploy_celery_workers,
-    deploy_flower,
-    expose_flower_service
-)
-from update_utils import (
+from utilities.patching import (
     update_all_deployments,
     update_worker_deployment,
     update_flower_deployment
@@ -19,59 +16,46 @@ from update_utils import (
 
 
 @kopf.on.create('celeryproject.org', 'v1alpha1', 'celery')
-def create_fn(spec, name, namespace, logger, **kwargs):
+def create_fn(spec, namespace, logger, **kwargs):
     """
         Celery custom resource creation handler
     """
-
-    # 1. Validation of spec
-    val, err_msg = validate_spec(spec)
-    if err_msg:
-        status = 'Failed validation'
-        raise kopf.PermanentError(f"{err_msg}. Got {val}")
-
     api = kubernetes.client.CoreV1Api()
     apps_api_instance = kubernetes.client.AppsV1Api()
+    try:
+        celery_cr = celery_custom_resource_from_dict(dict(spec))
+    except Exception as e:
+        raise kopf.PermanentError(e)
 
-    # 2. Deployment for celery workers
-    worker_deployment = deploy_celery_workers(
-        apps_api_instance, namespace, spec, logger
+    # deploy worker
+    worker_deployment = WorkerDeploymentGenerator(
+        namespace=namespace, celery_cr=celery_cr
+    ).get_worker_deployment()
+    kopf.adopt(worker_deployment)
+    apps_api_instance.create_namespaced_deployment(
+        namespace=namespace,
+        body=worker_deployment
     )
 
-    # 3. Deployment for flower
-    flower_deployment = deploy_flower(
-        apps_api_instance, namespace, spec, logger
+    # deploy flower
+    flower_dep_gen_instance = FlowerDeploymentGenerator(
+        namespace=namespace, celery_cr=celery_cr
+    )
+    flower_deployment = flower_dep_gen_instance.get_flower_deployment()
+    kopf.adopt(flower_deployment)
+    apps_api_instance.create_namespaced_deployment(
+        namespace=namespace,
+        body=flower_deployment
     )
 
-    # 4. Expose flower service
-    flower_svc = expose_flower_service(
-        api, namespace, spec, logger
-    )
+    # expose service
+    flower_svc = flower_dep_gen_instance.get_flower_svc()
+    kopf.adopt(flower_svc)
+    api.create_namespaced_service(namespace=namespace, body=flower_svc)
 
-    children = [
-        {
-            'name': worker_deployment.metadata.name,
-            'replicas': worker_deployment.spec.replicas,
-            'kind': constants.DEPLOYMENT_KIND,
-            'type': constants.WORKER_TYPE
-        },
-        {
-            'name': flower_deployment.metadata.name,
-            'replicas': flower_deployment.spec.replicas,
-            'kind': constants.DEPLOYMENT_KIND,
-            'type': constants.FLOWER_TYPE
-        },
-        {
-            'name': flower_svc.metadata.name,
-            'spec': flower_svc.spec.to_dict(),
-            'kind': constants.SERVICE_KIND,
-            'type': constants.FLOWER_TYPE
-        }
-    ]
-
+    # TODO: Decide the return structure
     return {
-        'children': children,
-        'children_count': len(children),
+        'children': 3,
         'status': constants.STATUS_CREATED
     }
 
@@ -172,7 +156,7 @@ def get_flower_svc_host(status):
 
 
 @kopf.timer('celeryproject.org', 'v1alpha1', 'celery',
-            initial_delay=5, interval=10, idle=10)
+            initial_delay=50000, interval=10000, idle=10)
 def message_queue_length(spec, status, **kwargs):
     flower_svc_host = get_flower_svc_host(status)
     if not flower_svc_host:
@@ -243,22 +227,3 @@ def horizontal_autoscale(spec, status, namespace, **kwargs):
         'deploymentName': updated_deployment.metadata.name,
         'updated_num_of_replicas': updated_num_of_replicas
     }
-
-
-def validate_stuff(spec):
-    """
-        1. If the deployment/svc already exists, k8s throws error
-        2. Response and spec classes and enums
-    """
-    pass
-
-
-def validate_spec(spec):
-    """
-        Validates the incoming spec
-        @returns - True/False, Error Message
-    """
-    # size = spec.get('size')
-    # if not size:
-    #     return size, "Size must be set"
-    return None, None
