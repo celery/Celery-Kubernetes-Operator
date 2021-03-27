@@ -5,7 +5,7 @@ metadata:
 spec:
   image: example-image
   imagePullPolicy: Never
-  appName: celery-example
+  appName: example
   celeryApp: 'app:celery_app'
   celeryVersion: "4.X"
   workerReplicas: 3

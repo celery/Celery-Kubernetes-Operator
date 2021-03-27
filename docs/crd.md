@@ -12,12 +12,12 @@ It currently supports these parameters-
 - `flowerReplicas` - Number of flower pods to be run. Default is 1
 - `workerSpec` - Worker deployment-specific parameters
     + `args` - Arguments to the celery worker command. The docker image's CMD is used if this is not provided. Similar to: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
-    + `envs` - EnvVar represents an environment variable present in a Container. Similar to: https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/
+    + `env` - EnvVar represents an environment variable present in a Container. Similar to: https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/
     + `nodeSelector` - A map of key-value pairs. For the pod/worker to be eligible to run on a node, the node must have each of the indicated key-value pairs as labels. Read more: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
     + `resources` - Compute Resources required by the worker container. Cannot be updated. Read more: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
 - `flowerSpec` - Flower deployment specific parameters
     + `args` - Arguments to the celery flower command. Similar to: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
-    + `envs` - EnvVar represents an environment variable present in a Container. Similar to: https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/
+    + `env` - EnvVar represents an environment variable present in a Container. Similar to: https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/
     + `nodeSelector` - A map of key-value pairs. For the pod/worker to be eligible to run on a node, the node must have each of the indicated key-value pairs as labels. Read more: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
     + `resources` - Compute Resources required by the worker container. Cannot be updated. Read more: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
     + `service` - Service defines the template for the associated Kubernetes Service object for exposing Flower UI. Read more: https://kubernetes.io/docs/concepts/services-networking/service/

@@ -69,7 +69,7 @@ spec:
                       items:
                         description: "Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell"
                         type: string
-                    envs:
+                    env:
                       items:
                         description: EnvVar represents an environment variable present in
                           a Container.
@@ -208,7 +208,7 @@ spec:
                       items:
                         description: "Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell"
                         type: string
-                    envs:
+                    env:
                       items:
                         description: EnvVar represents an environment variable present in
                           a Container.
