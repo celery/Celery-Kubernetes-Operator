@@ -7,7 +7,7 @@ spec:
   imagePullPolicy: Never
   appName: example
   celeryApp: 'app:celery_app'
-  celeryVersion: "4.X"
+  celeryVersion: "5.0"
   workerReplicas: 3
   flowerReplicas: 2
   workerSpec:
