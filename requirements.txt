@@ -12,7 +12,7 @@ certifi==2023.7.22
 chardet==3.0.4
 click==8.0.2
 decorator==4.4.2
-Flask==1.1.2
+Flask==2.3.2
 flower==1.2.0
 future==0.18.3
 google-auth==1.16.1
