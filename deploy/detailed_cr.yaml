@@ -1,0 +1,159 @@
+apiVersion: celeryproject.org/v1alpha1
+kind: Celery
+metadata:
+  name: example-celery-obj
+spec:
+  image: example-image
+  imagePullPolicy: Never
+  imagePullSecrets:
+    - name: dockerhub-creds
+  appName: example-app
+  celeryApp: 'app:celery_app'
+  celeryVersion: "5.0"
+  workerReplicas: 3
+  flowerReplicas: 2
+  workerSpec:
+    args: [ "--loglevel", "INFO", "-Ofair", "-Q", "celery", "-c", "2" ]
+    env:
+      - name: STATSD_HOST
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: status.hostIP
+      - name: ENV
+        valueFrom:
+          configMapKeyRef:
+            key: ENV
+            name: global
+      - name: FOO
+        value: foo_value
+      - name: APP_RELEASE_VERSION
+        value: 8bdd66
+    nodeSelector:
+      disktype: ssd
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+  flowerSpec:
+    service:
+      metadata:
+        name: celery-example-flower
+        namespace: default
+        labels:
+          app: celery-example-flower
+      spec:
+        type: NodePort
+        ports:
+        - port: 5555
+          protocol: TCP
+        selector:
+          run: celery-example-flower
+    args: [ "--loglevel", "INFO" ]
+    nodeSelector:
+      disktype: ssd
+    env:
+      - name: STATSD_HOST
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: status.hostIP
+      - name: ENV
+        valueFrom:
+          configMapKeyRef:
+            key: ENV
+            name: global
+      - name: FOOBAR
+        value: foobar_value
+      - name: APP_RELEASE_VERSION
+        value: 8bdd66
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+  initContainers:
+    - args:
+        - -template
+        - /configmap/nginx.conf.ctmpl:/config/nginx.conf
+        - -log-level
+        - trace
+        - -once
+      env:
+        - name: CONSUL_ADDR
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: CONSUL_TEMPLATE_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              key: CONSUL_TEMPLATE_PREFIX
+              name: global
+      image: docker-hub.foo.bar/consul-template
+      imagePullPolicy: Always
+      name: consul-template
+      resources:
+        limits:
+          cpu: 550m
+          memory: 400Mi
+        requests:
+          cpu: 500m
+          memory: 200Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+        - mountPath: /configmap
+          name: foo-configmap
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: default-token
+          readOnly: true
+  volumeMounts:
+    - mountPath: /code/settings.py
+      name: foo-config
+      subPath: settings.py
+    - mountPath: /code/application/gunicorn.conf
+      name: bar-config
+      subPath: gunicorn.conf
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token
+      readOnly: true
+  volumes:
+    - name: test-volume
+      # This AWS EBS volume must already exist.
+      awsElasticBlockStore:
+        volumeID: "<volume id>"
+        fsType: ext4
+    - name: default-token
+      secret:
+        defaultMode: 420
+        secretName: default-token
+    - configMap:
+        defaultMode: 420
+        name: foo-configmap
+      name: foo-configmap
+  livenessProbe:
+    failureThreshold: 5
+    httpGet:
+      path: /my-app/health
+      port: 80
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 20
+    successThreshold: 1
+    timeoutSeconds: 10
+  readinessProbe:
+    failureThreshold: 5
+    httpGet:
+      path: /my-app/health
+      port: 80
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 20
+    successThreshold: 1
+    timeoutSeconds: 10

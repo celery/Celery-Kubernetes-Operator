@@ -2,12 +2,9 @@ from celery import Celery
 from flask import Flask
 
 
-def make_celery(app):
-    celery = Celery(
-        app.import_name,
-        backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL']
-    )
+def make_celery(app, celery_config):
+    celery = Celery(app.import_name)
+    celery.config_from_object(celery_config)
     celery.conf.update(app.config)
 
     class ContextTask(celery.Task):
@@ -20,11 +17,7 @@ def make_celery(app):
 
 
 flask_app = Flask(__name__)
-flask_app.config.update(
-    CELERY_BROKER_URL='redis://redis-master/1',
-    CELERY_RESULT_BACKEND='redis://redis-master/1'
-)
-celery_app = make_celery(flask_app)
+celery_app = make_celery(flask_app, 'celeryconfig')
 
 
 @celery_app.task()

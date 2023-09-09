@@ -3,15 +3,15 @@ kind: Celery
 metadata:
   name: example-celery-obj
 spec:
-  common:
-    appName: celery-crd-example
-    celeryApp: 'app:celery_app'
-    image: example-image
+  image: example-image
+  imagePullPolicy: Never
+  appName: example
+  celeryApp: 'app:celery_app'
+  celeryVersion: "5.0"
+  workerReplicas: 3
+  flowerReplicas: 2
   workerSpec:
-    numOfWorkers: 2
-    queues: celery # default queue name
-    logLevel: debug
-    concurrency: 2
+    args: [ "--loglevel", "INFO", "-Ofair", "-Q", "celery", "-c", "2" ]
     resources:
       requests:
         cpu: "100m"
@@ -20,7 +20,19 @@ spec:
         cpu: "200m"
         memory: "128Mi"
   flowerSpec:
-    replicas: 1
+    service:
+      metadata:
+        name: celery-example-flower
+        namespace: default
+        labels:
+          app: celery-example-flower
+      spec:
+        type: NodePort
+        ports:
+        - port: 5555
+          protocol: TCP
+        selector:
+          run: celery-example-flower
     resources:
       requests:
         cpu: "100m"
@@ -28,12 +40,3 @@ spec:
       limits:
         cpu: "200m"
         memory: "128Mi"
-  scaleTargetRef:
-  - kind: worker
-    minReplicas: 2
-    maxReplicas: 5
-    metrics:
-    - name: message_queue
-      target:
-        type: length
-        averageValue: 100
